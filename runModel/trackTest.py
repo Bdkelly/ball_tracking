@@ -115,7 +115,6 @@ def main():
         ToTensorV2()
     ])
     
-    # --- Integration Start ---
     ser = None
     esp32_port = find_esp32()
     if esp32_port:
@@ -125,7 +124,6 @@ def main():
         except serial.SerialException as e:
             print(f"Failed to connect to ESP32: {e}")
             ser = None
-    # --- Integration End ---
     
     # Video stream setup
     cap = cv2.VideoCapture(1)
