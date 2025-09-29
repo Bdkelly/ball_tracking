@@ -1,6 +1,9 @@
 import os
 from PIL import Image
-from utils.jsonreader import infbondbox
+try:
+    from utils.jsonreader import infbondbox
+except:
+    from .jsonreader import infbondbox
 
 def getSize(frame,img_dir):
     filepath = getFirst(frame,img_dir)
@@ -93,8 +96,10 @@ def cleanCall(jsonpath,imgpath):
     return clean_data,width,height
 
 if __name__ == "__main__": 
-    jsonpath = "/Users/Ben/Documents/dever/python/ptorch/ball_tracking/inferred_images/mlsvideo/jdata/cleaned_json/comb/vb.json"
-    imgpath = "/Users/Ben/Documents/dever/python/ptorch/data/outframes/mlsvideo/imgs"
+    #jsonpath = "/Users/Ben/Documents/dever/python/ptorch/ball_tracking/inferred_images/mlsvideo/jdata/cleaned_json/comb/vb.json"
+    #imgpath = "/Users/Ben/Documents/dever/python/ptorch/data/outframes/mlsvideo/imgs"
+    jsonpath = "/Users/Ben/Documents/dever/python/ptorch/data/outframes/dips/p5/dips005.json"
+    imgpath = "/Users/Ben/Documents/dever/python/ptorch/data/outframes/dips/p5/imgs"
     #jsonpath = "/Users/Ben/Documents/dever/python/ptorch/data/video1p.json"
     #imgpath = "/Users/Ben/Documents/dever/python/ptorch/data/outframes/video1/imgs"
     clean_data,widht,height = cleanCall(jsonpath,imgpath)

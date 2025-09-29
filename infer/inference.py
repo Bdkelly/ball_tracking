@@ -1,14 +1,14 @@
 import torch
 import json
 import cv2
-from utils.jsonreader import extbondbox
+from ..utils.jsonreader import extbondbox
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 from PIL import Image, ImageDraw, ImageFont
 import os
 import shutil
 import numpy as np
-from utils.models import get_fasterrcnn_model_single_class as fmodel # Import your model function
+from ..utils.models import get_fasterrcnn_model_single_class as fmodel # Import your model function
 
 GLOBAL_CLASS_NAMES = ['__background__', 'Ball']
 def ballget(image_path,objects):
@@ -75,7 +75,7 @@ def images_to_video(image_folder, video_name="/Users/Ben/Documents/dever/python/
     video.release()
     print(f"Successfully created video at '{video_name}' with {len(images)} frames.")
 
-def copy_image_to_folder(source_image_path, destination_folder_path="/Users/Ben/Documents/dever/python/ptorch/ball_tracking/mlsSmall"):
+def copy_image_to_folder(source_image_path, destination_folder_path="/Users/Ben/Documents/dever/python/ptorch/ball_tracking/mlsSmall"): 
     """
     Copies an image from a source path to a destination folder.
 
@@ -224,11 +224,12 @@ def run_inference(image_path, video_name, model_path, confidence_threshold=0.98)
         draw.text((box[0] + 5, box[1] + 5), f"{label} {score:.2f}", fill="red", font=font)
         count += 1
 
-    output_dir = "inferred_images"+video_name+"/imgs"
+    output_dir = "/Users/Ben/Documents/dever/python/ptorch/data/outframes/"+video_name+"/inf_imgs"
     os.makedirs(output_dir, exist_ok=True)
-    output_image_path = os.path.join(output_dir, f"inferred_{os.path.basename(image_path)}")
-    image.save(output_image_path)
-    print(f"Inferred image saved to: {output_image_path}")
+    if detected_objects > 0 :
+        output_image_path = os.path.join(output_dir, f"inferred_{os.path.basename(image_path)}")
+        image.save(output_image_path)
+        print(f"Inferred image saved to: {output_image_path}")
     return boxer,output_dir
 
 def testhelper():
@@ -247,9 +248,9 @@ def testhelper():
 
 
 if __name__ == "__main__":
-    model_path = "model_merged.pth"
-    video_name = "/mlsvideo"
-    unlabeled_image_dir = "/Users/Ben/Documents/dever/python/ptorch/data/outframes"+video_name+"/imgs/"
+    model_path = "/Users/Ben/Documents/dever/python/ptorch/ball_tracking/infer/dipmodel.pth"
+    video_name = "dips/p10"
+    unlabeled_image_dir = "/Users/Ben/Documents/dever/python/ptorch/data/outframes/"+video_name+"/imgs/"
     if not os.path.exists(unlabeled_image_dir):
         print(f"Please create a directory named '{unlabeled_image_dir}' and place some images there.")
     box_list = []
@@ -259,7 +260,7 @@ if __name__ == "__main__":
         box,outd = run_inference(image_path,video_name,model_path)
         if box != {}:
             box_list.append(box)
-    images_to_video("/mlsvideoS")
+    #images_to_video("/mlsvideoS")
     jsondir = (f"{outd}/jdata/")
     jsonwriter(box_list,jsondir)
     '''

@@ -1,11 +1,11 @@
 import torch
 import os
-from utils.jsonreader import extbondbox, infbondbox
-from utils.cleanCall import cleanCall
+from ..utils.jsonreader import extbondbox, infbondbox
+from ..utils.cleanCall import cleanCall
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from utils.redodata import objectdata
-from utils.models import get_fasterrcnn_model_single_class as fmodel
+from ..utils.redodata import objectdata
+from ..utils.models import get_fasterrcnn_model_single_class as fmodel
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 from torchvision import transforms 
@@ -107,10 +107,10 @@ def trainer(jsondata,imgdir,num_epochs):
 ##########################
 ##########################
 if __name__ == "__main__":
-    jsonpath = "/Users/Ben/Documents/dever/python/ptorch/ball_tracking/inferred_images/mlsvideo/jdata/cleaned_json/comb/vb.json"
-    imgdir = "/Users/Ben/Documents/dever/python/ptorch/data/outframes/mlsvideo/imgs"
+    jsonpath = "/Users/Ben/Documents/dever/python/ptorch/data/outframes/dips/p5/dips005.json"
+    imgdir = "/Users/Ben/Documents/dever/python/ptorch/data/outframes/dips/p5/imgs"
     #jsonpath = "/Users/Ben/Documents/dever/python/ptorch/ball_tracking/inferred_images/mlsvideo/jdata/jdata.json"
     #imgdir = "/Users/Ben/Documents/dever/python/ptorch/data/outframes/mlsvideo/imgs"
-    num_epochs = 500
+    num_epochs = 42
     boxlst,width,height = cleanCall(jsonpath,imgdir)
     trainer(boxlst,imgdir,num_epochs)

@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
-from utils.cleanCall import cleanCall
+from .cleanCall import cleanCall
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 from PIL import Image
@@ -13,7 +13,7 @@ class objectdata(Dataset):
     def __init__(self, images_dir, jsondata, class_names, transform):
         self.images_dir = images_dir
         self.jsondata = jsondata
-        self.class_names = ['__background__'] + class_names # Ensure background class is at index 0
+        self.class_names = ['__background__'] + class_names
         self.label_to_id = {name: i for i, name in enumerate(self.class_names)}
         
         if not os.path.exists(self.images_dir):
@@ -25,6 +25,7 @@ class objectdata(Dataset):
             ], bbox_params=A.BboxParams(format='pascal_voc', label_fields=['labels']))
         else:
             self.transform = transform
+            
     def __len__(self):
         return len(self.jsondata)
     
@@ -38,55 +39,73 @@ class objectdata(Dataset):
 
         if not os.path.exists(img_path):
             print(f"Error: Image file not found for {img_path}. Returning dummy data.")
-            # Create a black dummy image matching the original video's dimensions
             image = Image.new('RGB', (self.oVideo_width, self.oVideo_height), (0,0,0)) 
-            # Leave boxes_for_frame and labels_for_frame empty
         else:
             image = Image.open(img_path).convert("RGB")
+            img_width, img_height = image.size 
         
-        xmin = frame['x_min']
-        ymin = frame['y_min']
-        xmax = frame['x_max']
-        ymax = frame['y_max']
+        xmin_pix = frame['x_min']
+        ymin_pix = frame['y_min']
+        xmax_pix = frame['x_max']
+        ymax_pix = frame['y_max']
         label_name = "Ball"
         
         label_id = self.label_to_id.get(label_name)
 
-        boxes_for_frame.append([xmin, ymin, xmax, ymax])
+        # Normalize coordinates
+        xmin_norm = xmin_pix / img_width
+        ymin_norm = ymin_pix / img_height
+        xmax_norm = xmax_pix / img_width
+        ymax_norm = ymax_pix / img_height
+        
+        # Clip coordinates to the [0.0, 1.0] range
+        xmin_norm = max(0.0, xmin_norm)
+        ymin_norm = max(0.0, ymin_norm)
+        xmax_norm = min(1.0, xmax_norm)
+        ymax_norm = min(1.0, ymax_norm)
+
+        boxes_for_frame.append([xmin_norm, ymin_norm, xmax_norm, ymax_norm])
         labels_for_frame.append(label_id)
 
-        boxes_tensor = torch.as_tensor(boxes_for_frame, dtype=torch.float32)
-        labels_tensor = torch.as_tensor(labels_for_frame, dtype=torch.int64)
-
-        target = {'boxes': boxes_tensor, 'labels': labels_tensor}
+        boxes_np = np.array(boxes_for_frame, dtype=np.float32)
+        labels_np = np.array(labels_for_frame, dtype=np.int32)
 
         image_np = np.array(image)
 
         if self.transform:
             transformed = self.transform(
                 image=image_np, 
-                bboxes=target['boxes'].cpu().numpy(), # Albumentations expects NumPy for bboxes
-                labels=target['labels'].cpu().numpy() # Albumentations expects NumPy for labels
+                bboxes=boxes_np, 
+                labels=labels_np 
             )
-            image = transformed['image'] # Transformed image (now a PyTorch tensor)
-            target['boxes'] = torch.as_tensor(transformed['bboxes'], dtype=torch.float32)
-            target['labels'] = torch.as_tensor(transformed['labels'], dtype=torch.int64)
+            image = transformed['image']
+            
+            if len(transformed['bboxes']) > 0:
+                 target_boxes = torch.as_tensor(transformed['bboxes'], dtype=torch.float32)
+                 target_labels = torch.as_tensor(transformed['labels'], dtype=torch.int64)
+            else:
+                 target_boxes = torch.empty((0, 4), dtype=torch.float32)
+                 target_labels = torch.empty((0,), dtype=torch.int64)
         else:
-            # If no transform was explicitly provided, apply a basic default to ensure consistency
-            # (ToTensorV2 and Normalize are usually essential for model input)
             default_transform_pipeline = A.Compose([
                 A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
                 ToTensorV2()
             ])
             transformed = default_transform_pipeline(
                 image=image_np, 
-                bboxes=target['boxes'].cpu().numpy(), 
-                labels=target['labels'].cpu().numpy()
+                bboxes=boxes_np, 
+                labels=labels_np
             )
             image = transformed['image']
-            target['boxes'] = torch.as_tensor(transformed['bboxes'], dtype=torch.float32)
-            target['labels'] = torch.as_tensor(transformed['labels'], dtype=torch.int64)
+            
+            if len(transformed['bboxes']) > 0:
+                 target_boxes = torch.as_tensor(transformed['bboxes'], dtype=torch.float32)
+                 target_labels = torch.as_tensor(transformed['labels'], dtype=torch.int64)
+            else:
+                 target_boxes = torch.empty((0, 4), dtype=torch.float32)
+                 target_labels = torch.empty((0,), dtype=torch.int64)
 
+        target = {'boxes': target_boxes, 'labels': target_labels}
         return image, target
     
 if __name__ == "__main__":
@@ -97,20 +116,19 @@ if __name__ == "__main__":
     class_name = ['Ball'] 
     
     transform_pipeline = A.Compose([
-        A.Resize(640, 640), # Resize images to model input size
-        A.HorizontalFlip(p=0.5), # Example augmentation
-        A.RandomBrightnessContrast(p=0.2), # Example augmentation
-        A.Normalize(mean=(0.485, 0.456, 0.406), # Standard ImageNet means
-                    std=(0.229, 0.224, 0.225)),  # Standard ImageNet stds
-        ToTensorV2() # Converts image to PyTorch tensor (HWC to CHW)
-    ], bbox_params=A.BboxParams(format='pascal_voc', label_fields=['labels'])) # Crucial for bounding box transforms
+        A.Resize(640, 640),
+        A.HorizontalFlip(p=0.5),
+        A.RandomBrightnessContrast(p=0.2),
+        A.Normalize(mean=(0.485, 0.456, 0.406),
+                    std=(0.229, 0.224, 0.225)),
+        ToTensorV2()
+    ], bbox_params=A.BboxParams(format='pascal_voc', label_fields=['labels']))
 
     dataset = objectdata(imgdir,box,class_name,transform_pipeline)
     dataloader = DataLoader(
-                dataset, 
-                batch_size=2, # Use a small batch size for testing
-                shuffle=True, 
-                num_workers=0, # Set to 0 for initial debugging to avoid multiprocessing issues
-                collate_fn=lambda x: tuple(zip(*x)) # Custom collate_fn for object detection
-            ) 
-
+        dataset, 
+        batch_size=2,
+        shuffle=True, 
+        num_workers=0,
+        collate_fn=lambda x: tuple(zip(*x))
+    )
