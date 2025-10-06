@@ -81,7 +81,7 @@ def test_get_ball_detection_no_high_confidence(mock_cvt, mock_puttext, mock_rect
     assert len(detected_boxes) == 0
     mock_rect.assert_not_called()
 
-# --- Mocking Main Loop Logic ---
+# Main Loop Logic
 
 @patch('tracker_agent.get_ball_detection')
 @patch('tracker_agent.find_esp32', return_value='COM_MOCK')
@@ -106,7 +106,6 @@ def test_main_logic_moves_left(mock_time, *args):
     mock_cap.get.side_effect = [FRAME_WIDTH, 480]
     mock_cap.read.side_effect = [(True, np.zeros((480, 640, 3), dtype=np.uint8)), (False, None)]
     
-    # Box far left (center X < 270)
     mock_get_detection = args[7]
     mock_get_detection.return_value = ([{'box': (50, 50, 150, 150), 'label': 'Ball', 'score': 0.99}], MagicMock())
     
