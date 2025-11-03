@@ -101,7 +101,7 @@ class MainWindow(QMainWindow):
     # This method initializes the thread and calls helper methods to set up the GUI
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("PyTorch Ball Tracker GUI")
+        self.setWindowTitle("CamMan GUI")
         self.setGeometry(100, 100, 950, 650) 
         
         self.thread = VideoThread() 
