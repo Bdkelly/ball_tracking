@@ -32,6 +32,7 @@ class VideoThread(QThread):
         super().__init__(parent)
         self._run_flag = True
         self.inference_active = False
+        self.agent_active = False
         self.mutex = QMutex()
 
         self.ser = None 
@@ -72,6 +73,12 @@ class VideoThread(QThread):
         self.inference_active = state
         self.mutex.unlock()
         self.command_log_signal.emit(f"--- Inference {'STARTED' if state else 'STOPPED'} ---")
+    def toggle_agent(self, state):
+        self.mutex.lock()
+        self.agent_active = state
+        self.mutex.unlock()
+        self.command_log_signal.emit(f"Command Interval set to: {interval:.2f}s")
+
 
     # This slot receives the new command interval from the GUI and updates the interval variable safely
     @pyqtSlot(float)
@@ -95,6 +102,7 @@ class VideoThread(QThread):
 class MainWindow(QMainWindow):
     #This signal is emitted to toggle the inference status in the VideoThread
     inference_toggle_signal = pyqtSignal(bool)
+    agent_toggle_signal = pyqtSignal(bool)
     # This signal is emitted to send the new command interval to the VideoThread
     command_interval_update_signal = pyqtSignal(float) 
 
@@ -118,6 +126,15 @@ class MainWindow(QMainWindow):
         self.image_label.setAlignment(Qt.AlignCenter)
         self.image_label.setFixedSize(640, 480)
         
+        self.control_button = QPushButton("Start Simple Tracker")
+        self.control_button.setCheckable(True)
+
+        self.agent_control_button = QPushButton("Start CamMan Agent")
+        self.agent_control_button.setCheckable(True)
+        self.agent_control_button.setStyleSheet("background-color: lightblue")
+
+
+
         self.control_button = QPushButton("Start Inference")
         self.control_button.setCheckable(True)
 
@@ -149,6 +166,7 @@ class MainWindow(QMainWindow):
         video_control_v_layout = QVBoxLayout()
         video_control_v_layout.addWidget(self.image_label)
         video_control_v_layout.addWidget(self.control_button)
+        video_control_v_layout.addWidget(self.agent_control_button)
         main_h_layout.addLayout(video_control_v_layout)
         
         right_v_layout = QVBoxLayout()
@@ -171,6 +189,7 @@ class MainWindow(QMainWindow):
     #This method connects all widget signals to their respective slots and cross-thread signals
     def _connect_signals(self):
         self.control_button.clicked.connect(self.toggle_inference)
+        self.agent_control_button.clicked.connect(self.toggle_agent)
         self.interval_slider.valueChanged.connect(self.update_interval_ui)
         self.interval_slider.valueChanged.connect(self.update_interval_thread)
 
@@ -201,6 +220,14 @@ class MainWindow(QMainWindow):
         else:
             self.control_button.setText("Start Inference")
             self.inference_toggle_signal.emit(False)
+    
+    def toggle_agent(self, checked): # <--- NEW TOGGLE METHOD
+        if checked:
+            self.agent_control_button.setText("Stop CamMan Agent")
+            self.agent_toggle_signal.emit(True)
+        else:
+            self.agent_control_button.setText("Start CamMan Agent")
+            self.agent_toggle_signal.emit(False)
 
     # This method updates the text label to reflect the new slider value
     def update_interval_ui(self, value):
