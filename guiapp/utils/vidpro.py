@@ -120,28 +120,41 @@ def get_ball_detection_external(model, frame, transform, device, confidence_thre
     return detected_boxes, frame
 # -----------------------------------------------
 
-def videorun(thread_instance, cap, W, H):
-    
+def videorun(thread_instance, cap, W, H, model, transform, device, ser):
+    camera_env = CameraControlEnv(
+        cap=cap,
+        detection_model=model,
+        transform=transform,
+        device=device,
+        frame_center_x=W // 2,
+        frame_center_y=H // 2,
+        max_action=1.0,
+        reward_weights={'centering': 100.0, 'effort': 1.0, 'stability': 20.0}
+    )
+    camera_env.ser = ser
+
     while thread_instance._run_flag:
         ret, frame = cap.read()
         if ret:
             frame_to_display = frame.copy()
 
             thread_instance.mutex.lock()
+            is_agent_active = thread_instance.agent_active
             is_inference_active = thread_instance.inference_active
-            command_interval = thread_instance.command_interval
-            ser = thread_instance.ser
             thread_instance.mutex.unlock()
 
-            if is_inference_active:
-                detected_boxes, frame_with_detections = get_ball_detection_external(
-                    thread_instance.model, frame_to_display, thread_instance.transform, thread_instance.device
+            if is_agent_active and thread_instance.agent:
+                camera_env.set_current_frame(frame)
+                state, frame_with_detections = camera_env.get_state()
+                action = thread_instance.agent.choose_action(state)
+                camera_env.execute_action(action)
+                frame_to_display = frame_with_detections if frame_with_detections is not None else frame_to_display
+            elif is_inference_active:
+                _, frame_with_detections = get_ball_detection_external(
+                    model, frame_to_display, transform, device
                 )
-
-                
-                
                 frame_to_display = frame_with_detections
-            
+
             qt_image = thread_instance._convert_cv_qt(frame_to_display)
             thread_instance.change_pixmap_signal.emit(qt_image)
         

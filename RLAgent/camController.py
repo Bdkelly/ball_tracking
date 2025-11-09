@@ -178,3 +178,24 @@ class CameraControlEnv:
         
         
         return next_state, reward, done, np.array([pan_action]), frame_with_detections
+
+    def set_current_frame(self, frame):
+        self.current_frame = frame
+
+    def get_state(self):
+        ball_x, ball_y, frame_with_detections = self.detect_ball()
+        dx = (ball_x - self.dyn_center_x) / self.W
+        dy = (ball_y - self.dyn_center_y) / self.H
+        state = np.array([dx, dy, self.prev_action[0]], dtype=np.float32)
+        return state, frame_with_detections
+
+    def execute_action(self, action):
+        pan_action = action.flatten()[0]
+        pan_shift = pan_action * (self.W * 0.1 / self.max_action)
+        self.dyn_center_x += pan_shift
+        self.dyn_center_x = np.clip(self.dyn_center_x, self.max_center_shift_x, self.W - self.max_center_shift_x)
+        command = f"P:{pan_action:.2f},T:{0.0:.2f}\n"
+        if self.ser:
+            self.ser.write(command.encode('utf-8'))
+        print(f"Sent command: {command.strip()}")
+        self.prev_action = np.array([pan_action, 0.0], dtype=np.float32)

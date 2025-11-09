@@ -1,4 +1,5 @@
 import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import time
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, 
@@ -18,8 +19,12 @@ from utils.models import get_fasterrcnn_model_single_class as fmodel
 # Import the main processing and control functions from external files
 from utils.vidpro import videorun, init_video_comp 
 from utils.ser_con import move_left, move_right
+from RLAgent.RLAgent import RLAgent
+from RLAgent.camController import CameraControlEnv
+import numpy as np
 
 GLOBAL_CLASS_NAMES = ['__background__', 'Ball']
+AGENT_MODEL_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'RLAgent', 'models', 'actor_model.pth'))
 
 class VideoThread(QThread):
     # This signal emits a processed QImage to the main window for display
@@ -34,6 +39,7 @@ class VideoThread(QThread):
         self.inference_active = False
         self.agent_active = False
         self.mutex = QMutex()
+        self.agent = None
 
         self.ser = None 
         self.command_interval = 1.0 
@@ -60,6 +66,19 @@ class VideoThread(QThread):
         H = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        state_size = 3  
+        action_size = 1
+        max_action = 1.0  
+        self.agent = RLAgent(state_size, action_size, max_action, device)
+        try:
+            self.agent.actor_local.load_state_dict(torch.load(AGENT_MODEL_PATH))
+            self.command_log_signal.emit("Agent model loaded successfully.")
+        except Exception as e:
+            self.command_log_signal.emit(f"Failed to load agent model: {e}")
+            self._run_flag = False
+            return
+
         videorun(self, cap, W, H, model, transform, device, self.ser)
 
     def stop(self):
@@ -77,7 +96,7 @@ class VideoThread(QThread):
         self.mutex.lock()
         self.agent_active = state
         self.mutex.unlock()
-        self.command_log_signal.emit(f"Command Interval set to: {interval:.2f}s")
+        self.command_log_signal.emit(f"--- CamMan Agent {'STARTED' if state else 'STOPPED'} ---")
 
 
     # This slot receives the new command interval from the GUI and updates the interval variable safely
@@ -102,9 +121,10 @@ class VideoThread(QThread):
 class MainWindow(QMainWindow):
     #This signal is emitted to toggle the inference status in the VideoThread
     inference_toggle_signal = pyqtSignal(bool)
-    agent_toggle_signal = pyqtSignal(bool)
+
     # This signal is emitted to send the new command interval to the VideoThread
     command_interval_update_signal = pyqtSignal(float) 
+    agent_toggle_signal = pyqtSignal(bool)
 
     # This method initializes the thread and calls helper methods to set up the GUI
     def __init__(self):
@@ -126,17 +146,12 @@ class MainWindow(QMainWindow):
         self.image_label.setAlignment(Qt.AlignCenter)
         self.image_label.setFixedSize(640, 480)
         
-        self.control_button = QPushButton("Start Simple Tracker")
+        self.control_button = QPushButton("Start Inference")
         self.control_button.setCheckable(True)
 
         self.agent_control_button = QPushButton("Start CamMan Agent")
         self.agent_control_button.setCheckable(True)
         self.agent_control_button.setStyleSheet("background-color: lightblue")
-
-
-
-        self.control_button = QPushButton("Start Inference")
-        self.control_button.setCheckable(True)
 
         self.log_display = QTextEdit()
         self.log_display.setReadOnly(True)
@@ -197,6 +212,7 @@ class MainWindow(QMainWindow):
         self.manual_right_button.clicked.connect(lambda: move_right(self.thread.ser))
         
         self.inference_toggle_signal.connect(self.thread.toggle_inference)
+        self.agent_toggle_signal.connect(self.thread.toggle_agent)
         self.command_interval_update_signal.connect(self.thread.set_command_interval)
         
         self.thread.change_pixmap_signal.connect(self.update_image)

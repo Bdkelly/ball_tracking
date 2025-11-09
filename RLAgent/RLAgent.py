@@ -6,8 +6,8 @@ import numpy as np
 import random
 from collections import deque, namedtuple
 
-from ActorNet import Actor
-from CriticNet import Critic
+from .ActorNet import Actor
+from .CriticNet import Critic
 
 LR_ACTOR = 1e-4
 LR_CRITIC = 1e-3
