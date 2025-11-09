@@ -40,7 +40,7 @@ def vidget(videopth):
     return cap, W, H
 
 
-def train_agent(videopth, model_path, num_episodes=100, max_t=500):
+def train_agent(videopth, model_path, num_episodes=1000, max_t=5000):
     num_classes = len(GLOBAL_CLASS_NAMES)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     cap, W, H = vidget(videopth)
