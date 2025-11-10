@@ -71,7 +71,7 @@ class RLAgent:
         dones = torch.stack(batch.done).to(self.device).float()
         actions_next = self.actor_target(next_states)
         Q_targets_next = self.critic_target(next_states, actions_next)
-        Q_targets = rewards + (self.gamma * Q_targets_next * (1 - dones.unsqueeze(1)))
+        Q_targets = rewards + (self.gamma * Q_targets_next * (1 - dones))
         Q_expected = self.critic_local(states, actions)
         self.critic_loss = F.mse_loss(Q_expected, Q_targets)
         self.critic_optimizer.zero_grad()
