@@ -6,8 +6,8 @@ import numpy as np
 import random
 from collections import deque, namedtuple
 
-from .ActorNet import Actor
-from .CriticNet import Critic
+from ActorNet import Actor
+from CriticNet import Critic
 import config
 
 Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state', 'done'))

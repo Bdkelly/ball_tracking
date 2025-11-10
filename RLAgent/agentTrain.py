@@ -9,7 +9,6 @@ import numpy as np
 import torch
 from collections import deque
 from reward import RewardSystem
-from torch.utils.tensorboard import SummaryWriter
 import config
 
 def vidget(videopth):
@@ -33,7 +32,6 @@ def save_checkpoint(agent, episode):
     print(f"\nCheckpoint saved for episode {episode}")
 
 def train_agent(videopth, model_path, num_episodes=config.NUM_EPISODES, max_t=config.MAX_T):
-    writer = SummaryWriter(log_dir=config.LOG_DIR)
     
     num_classes = config.NUM_CLASSES
     device = config.DEVICE
@@ -113,11 +111,6 @@ def train_agent(videopth, model_path, num_episodes=config.NUM_EPISODES, max_t=co
             best_score = avg_score
             save_checkpoint(agent, 'best')
         
-        writer.add_scalar('Score', score, i_episode)
-        writer.add_scalar('Average Score', avg_score, i_episode)
-        writer.add_scalar('Actor Loss', agent.actor_loss, i_episode)
-        writer.add_scalar('Critic Loss', agent.critic_loss, i_episode)
-        writer.add_scalar('Noise', noise, i_episode)
         
         noise = max(config.NOISE_SIGMA_MIN, noise * config.NOISE_DECAY)
 
@@ -126,7 +119,6 @@ def train_agent(videopth, model_path, num_episodes=config.NUM_EPISODES, max_t=co
             print(f'\rEpisode {i_episode}\tAverage Score (100 eps): {avg_score:.2f}')
             save_checkpoint(agent, i_episode)
             
-    writer.close()
     cap.release()
     cv2.destroyAllWindows()
     print("\nTraining complete.")
