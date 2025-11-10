@@ -8,9 +8,7 @@ from collections import deque, namedtuple
 
 from .ActorNet import Actor
 from .CriticNet import Critic
-
-LR_ACTOR = 1e-4
-LR_CRITIC = 1e-3
+import config
 
 Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state', 'done'))
 
@@ -20,18 +18,20 @@ class RLAgent:
         self.action_size = action_size
         self.max_action = max_action
         self.device = device
-        self.gamma = 0.99
-        self.softup = 0.005
+        self.gamma = config.GAMMA
+        self.softup = config.SOFT_UPDATE
         self.actor_local = Actor(state_size, action_size, max_action).to(device)
         self.actor_target = Actor(state_size, action_size, max_action).to(device)
         self.actor_target.load_state_dict(self.actor_local.state_dict())
-        self.actor_optimizer = optim.Adam(self.actor_local.parameters(), lr=LR_ACTOR)
+        self.actor_optimizer = optim.Adam(self.actor_local.parameters(), lr=config.LR_ACTOR)
         self.critic_local = Critic(state_size, action_size).to(device)
         self.critic_target = Critic(state_size, action_size).to(device)
         self.critic_target.load_state_dict(self.critic_local.state_dict())
-        self.critic_optimizer = optim.Adam(self.critic_local.parameters(), lr=LR_CRITIC)
-        self.memory = deque(maxlen=20000)
-        self.batch_size = 5000
+        self.critic_optimizer = optim.Adam(self.critic_local.parameters(), lr=config.LR_CRITIC)
+        self.memory = deque(maxlen=config.MEMORY_SIZE)
+        self.batch_size = config.BATCH_SIZE
+        self.actor_loss = 0
+        self.critic_loss = 0
 
     def choose_action(self, state):
         state = torch.from_numpy(state).float().to(self.device).unsqueeze(0)
@@ -73,14 +73,14 @@ class RLAgent:
         Q_targets_next = self.critic_target(next_states, actions_next)
         Q_targets = rewards + (self.gamma * Q_targets_next * (1 - dones.unsqueeze(1)))
         Q_expected = self.critic_local(states, actions)
-        critic_loss = F.mse_loss(Q_expected, Q_targets)
+        self.critic_loss = F.mse_loss(Q_expected, Q_targets)
         self.critic_optimizer.zero_grad()
-        critic_loss.backward()
+        self.critic_loss.backward()
         self.critic_optimizer.step()
         actions_pred = self.actor_local(states)
-        actor_loss = -self.critic_local(states, actions_pred).mean()
+        self.actor_loss = -self.critic_local(states, actions_pred).mean()
         self.actor_optimizer.zero_grad()
-        actor_loss.backward()
+        self.actor_loss.backward()
         self.actor_optimizer.step()
         self.soft_update(self.critic_local, self.critic_target)
         self.soft_update(self.actor_local, self.actor_target)
