@@ -7,7 +7,8 @@ import os
 import cv2
 import numpy as np
 import torch
-from collections import deque 
+from collections import deque
+from reward import RewardSystem
 
 GLOBAL_CLASS_NAMES = ['__background__', 'Ball']
 
@@ -58,6 +59,7 @@ def train_agent(videopth, model_path, num_episodes=1000, max_t=5000):
         "stability": 50.0
     }
 
+    reward_system = RewardSystem(RWD_Weights)
     
     agent = RLAgent(state_size, action_size, max_action, device)
     noise = OUNoise(action_size, seed=0) 
@@ -86,7 +88,7 @@ def train_agent(videopth, model_path, num_episodes=1000, max_t=5000):
         frame_center_x=W // 2,
         frame_center_y=H // 2,
         max_action=max_action,
-        reward_weights=RWD_Weights,
+        reward_system=reward_system,
     )
 
     
