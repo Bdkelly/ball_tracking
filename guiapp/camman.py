@@ -1,5 +1,5 @@
 import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import os
 import time
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, 
@@ -9,16 +9,14 @@ from PyQt5.QtGui import QImage, QPixmap, QFont
 from PyQt5.QtCore import QThread, pyqtSignal, pyqtSlot, Qt, QMutex
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
-import os
 import cv2
 import torch
 import serial
 import serial.tools.list_ports
-from utils.models import get_fasterrcnn_model_single_class as fmodel
+from guiapp.utils.models import get_fasterrcnn_model_single_class as fmodel
 
-# Import the main processing and control functions from external files
-from utils.vidpro import videorun, init_video_comp 
-from utils.ser_con import move_left, move_right
+from guiapp.utils.vidpro import videorun, init_video_comp 
+from guiapp.utils.ser_con import move_left, move_right
 from RLAgent.RLAgent import RLAgent
 from RLAgent.camController import CameraControlEnv
 import numpy as np

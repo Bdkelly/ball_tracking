@@ -6,9 +6,9 @@ import numpy as np
 import random
 from collections import deque, namedtuple
 
-from ActorNet import Actor
-from CriticNet import Critic
-import config
+from RLAgent.ActorNet import Actor
+from RLAgent.CriticNet import Critic
+from RLAgent import config
 
 Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state', 'done'))
 

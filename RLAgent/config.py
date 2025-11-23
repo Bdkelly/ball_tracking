@@ -13,7 +13,7 @@ LOG_DIR = 'logs'
 STATE_SIZE = 3
 ACTION_SIZE = 1
 MAX_ACTION = 5.0
-NUM_CLASSES = 2  # '__background__', 'Ball'
+NUM_CLASSES = 2 
 
 # Training hyperparameters
 NUM_EPISODES = 2000

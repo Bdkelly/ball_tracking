@@ -1,15 +1,19 @@
-from RLAgent import RLAgent
-from camController import CameraControlEnv
+#Agent Calls
+from RLAgent.RLAgent import RLAgent
+from RLAgent.camController import CameraControlEnv
+from RLAgent.utils.models import get_fasterrcnn_model_single_class
+from RLAgent.reward import RewardSystem
+from RLAgent import config
+
+#Standard Calls
 from albumentations.pytorch import ToTensorV2
 import albumentations as A
-from utils.models import get_fasterrcnn_model_single_class
 import os
 import cv2
 import numpy as np
 import torch
 from collections import deque
-from reward import RewardSystem
-import config
+
 
 def vidget(videopth):
     cap = cv2.VideoCapture(videopth)

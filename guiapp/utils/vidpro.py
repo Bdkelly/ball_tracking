@@ -3,8 +3,8 @@ import time
 import torch
 import os
 import serial
-from utils.models import get_fasterrcnn_model_single_class as fmodel
-from utils.ser_con import move_left, move_right, find_esp32, set_command_signal
+from guiapp.utils.models import get_fasterrcnn_model_single_class as fmodel
+from guiapp.utils.ser_con import move_left, move_right, find_esp32, set_command_signal
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 

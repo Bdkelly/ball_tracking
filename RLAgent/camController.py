@@ -1,9 +1,12 @@
+#Agent Calls
+from RLAgent.ballfind import get_ball_detection
+from RLAgent.reward import RewardSystem
+#Standard Calls
 import cv2
 import numpy as np
 import torch
 import serial
-from ballfind import get_ball_detection
-from reward import RewardSystem
+
 
 class CameraControlEnv:
     def __init__(self, cap, detection_model, transform, device, 
