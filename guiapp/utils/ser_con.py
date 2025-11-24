@@ -1,17 +1,34 @@
 import serial
 import serial.tools.list_ports
 import time
-
-_command_signal_ref = None # Internal reference to hold the signal
+from guiapp.utils.ser_val import valid_serial
 
 def set_command_signal(signal):
     """Sets the global signal reference used for logging."""
     global _command_signal_ref
     _command_signal_ref = signal
 
+def scan_port(port):
+    result = valid_serial(port)
+    if result == "X":
+        return False
+    else:
+        return True
+        
+
+
 def find_esp32():
-    # ... (function remains the same)
-    return "/dev/cu.usbserial-10"
+    ports = serial.tools.list_ports.comports()
+    print(f"Scanning {len(ports)} serial ports...")
+    for port in ports:
+        print(f"Checking port: {port.device} - {port.description}")
+        if(scan_port(port)):
+            return "Serial Connection Valid: {port.name}"
+    return "No Valid Connection"
+
+    
+
+
 
 def move_left(ser):
     if ser:

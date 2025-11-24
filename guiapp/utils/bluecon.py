@@ -9,10 +9,22 @@ class ESP32Controller:
     def __init__(self):
         self.client = None
         self.device = None
+
+    async def scan_and_check(self):
+        print("Scanning for ESP32...")
+        device = await BleakScanner.find_device_by_filter(
+            lambda d, ad: self.SERVICE_UUID.lower() in ad.service_uuids
+        )
+        if device:
+             print(f"Found ESP32 at {device.address}")
+             self.device = device
+             return True
+        return False
     
     async def connect(self):
         print("Scanning for ESP32...")
-        self.device = await BleakScanner.find_device_by_filter(
+        if not self.device:
+            self.device = await BleakScanner.find_device_by_filter(
             lambda d, ad: self.SERVICE_UUID.lower() in ad.service_uuids
         )
 
