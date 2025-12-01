@@ -11,10 +11,10 @@ from RLAgent.RLAgent import RLAgent
 from RLAgent.camController import CameraControlEnv
 
 try:
-    from guiapp.utils.vidpro import videorun, init_video_comp
+    from guiapp.utils.vidpro import videorun, init_video_comp, load_model_from_path
     from guiapp.utils.models import get_fasterrcnn_model_single_class as fmodel
 except ImportError:
-    from utils.vidpro import videorun, init_video_comp
+    from utils.vidpro import videorun, init_video_comp, load_model_from_path
     from utils.models import get_fasterrcnn_model_single_class as fmodel
 
 GLOBAL_CLASS_NAMES = ['__background__', 'Ball']
@@ -22,7 +22,6 @@ AGENT_MODEL_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
 
 class VideoThread(QThread):
     change_pixmap_signal = pyqtSignal(QImage)
-
     command_log_signal = pyqtSignal(str)
 
     def __init__(self, parent=None):
@@ -37,17 +36,22 @@ class VideoThread(QThread):
         self.command_interval = 1.0 
         self.last_command_time = time.time()
         
+        self.model = None
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def run(self):
-   
+        # We pass self so init_video_comp can emit signals and accessing default model
         success, model, transform, ser_connection = init_video_comp(self)
         
         if not success:
             self._run_flag = False
             self.command_log_signal.emit("Initialization failed.")
             return
-            
-        self.ser = ser_connection 
+
+        self.mutex.lock()
+        self.model = model
+        self.ser = ser_connection
+        self.mutex.unlock()
 
         cap = cv2.VideoCapture(0)
         if not cap.isOpened():
@@ -58,12 +62,10 @@ class VideoThread(QThread):
         W = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         H = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
         state_size = 3  
         action_size = 1
         max_action = 1.0  
-        self.agent = RLAgent(state_size, action_size, max_action, device)
+        self.agent = RLAgent(state_size, action_size, max_action, self.device)
         try:
             self.agent.actor_local.load_state_dict(torch.load(AGENT_MODEL_PATH))
             self.command_log_signal.emit("Agent model loaded successfully.")
@@ -72,12 +74,29 @@ class VideoThread(QThread):
             self._run_flag = False
             return
 
-        videorun(self, cap, W, H, model, transform, device, self.ser)
+        # Note: videorun has been updated to check thread_instance.model (i.e. self.model)
+        videorun(self, cap, W, H, self.model, transform, self.device, self.ser)
 
     def stop(self):
         self._run_flag = False
         self.wait()
     
+    @pyqtSlot(str)
+    def update_model(self, model_path):
+        """Slot to update the model dynamically."""
+        self.command_log_signal.emit(f"Requesting model update: {model_path}")
+        try:
+            new_model = load_model_from_path(model_path, self.device, self)
+            if new_model:
+                self.mutex.lock()
+                self.model = new_model
+                self.mutex.unlock()
+                self.command_log_signal.emit("Model updated successfully.")
+            else:
+                self.command_log_signal.emit("Failed to load new model.")
+        except Exception as e:
+            self.command_log_signal.emit(f"Exception during model update: {e}")
+
     # This slot receives the toggle state from the GUI and updates the inference flag safely
     @pyqtSlot(bool)
     def toggle_inference(self, state):
