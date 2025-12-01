@@ -29,11 +29,45 @@ def track_control(thread_instance, detected_boxes, ser, W, H, command_interval):
             return True
     return False
 
-def init_video_comp(thread_instance):
-    set_command_signal(thread_instance.command_log_signal)
-    model_path = r'/Users/Ben/Documents/dever/python/ptorch/models/fin_comb.pth'
+def load_model_from_path(model_path, device, thread_instance=None):
     GLOBAL_CLASS_NAMES = ['__background__', 'Ball']
     num_classes = len(GLOBAL_CLASS_NAMES)
+    model = fmodel(num_classes).to(device)
+
+    if model_path and os.path.exists(model_path):
+        try:
+            model.load_state_dict(torch.load(model_path, map_location=device))
+            if thread_instance:
+                thread_instance.command_log_signal.emit(f"Model loaded from {model_path}")
+        except Exception as e:
+            if thread_instance:
+                thread_instance.command_log_signal.emit(f"Error loading model from {model_path}: {e}")
+            print(f"Error loading model: {e}")
+    else:
+        if thread_instance:
+             thread_instance.command_log_signal.emit(f"Model file not found at {model_path}. Using base model.")
+
+    model.eval()
+    return model
+
+def init_video_comp(thread_instance, model_path=None):
+    set_command_signal(thread_instance.command_log_signal)
+
+    # Default path fallback logic
+    if not model_path:
+        # Check if there are any models in the guiapp/models folder
+        models_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'models'))
+        if os.path.exists(models_dir):
+             files = [f for f in os.listdir(models_dir) if f.endswith('.pth')]
+             if files:
+                 model_path = os.path.join(models_dir, files[0])
+
+    # Fallback to the old hardcoded path if nothing else is found (for legacy support on user machine)
+    if not model_path:
+        legacy_path = r'/Users/Ben/Documents/dever/python/ptorch/models/fin_comb.pth'
+        if os.path.exists(legacy_path):
+            model_path = legacy_path
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = None
     transform = None
@@ -42,14 +76,9 @@ def init_video_comp(thread_instance):
     thread_instance.command_log_signal.emit(f"Using device: {device}")
 
     try:
-        model = fmodel(num_classes).to(device)
-        if os.path.exists(model_path):
-            model.load_state_dict(torch.load(model_path, map_location=device))
-        else:
-            thread_instance.command_log_signal.emit(f"Warning: Model file not found at {model_path}. Using base model.")
-        model.eval()
+        model = load_model_from_path(model_path, device, thread_instance)
     except Exception as e:
-        thread_instance.command_log_signal.emit(f"Error loading model: {e}")
+        thread_instance.command_log_signal.emit(f"Error initializing model: {e}")
         return False, None, None, None
 
     transform = A.Compose([
@@ -129,11 +158,13 @@ def videorun(thread_instance, cap, W, H, model, transform, device, ser):
             thread_instance.mutex.lock()
             is_agent_active = thread_instance.agent_active
             is_inference_active = thread_instance.inference_active
+            # Use the model stored in the thread instance if available, otherwise use the passed model
+            current_model = getattr(thread_instance, 'model', model)
             thread_instance.mutex.unlock()
 
-            if is_inference_active:
+            if is_inference_active and current_model:
                 detected_boxes, frame_with_detections = get_ball_detection_external(
-                    model, frame_to_display, transform, device
+                    current_model, frame_to_display, transform, device
                 )
                 if is_agent_active:
                     track_control(thread_instance, detected_boxes, ser, W, H, command_interval=0.5)
