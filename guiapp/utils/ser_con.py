@@ -14,21 +14,18 @@ def scan_port(port):
         return False
     else:
         return True
-        
-
-
+    
 def find_esp32():
     ports = serial.tools.list_ports.comports()
     print(f"Scanning {len(ports)} serial ports...")
-    for port in ports:
-        print(f"Checking port: {port.device} - {port.description}")
-        if(scan_port(port)):
-            return "Serial Connection Valid: {port.name}"
-    return "No Valid Connection"
-
-    
-
-
+    try:
+        for port in ports:
+            print(f"Checking port: {port.device} - {port.description}")
+            if(scan_port(port)):
+                return "Serial Connection Valid: {port.name}"
+        return "No Valid Connection"
+    except:    
+        return "No Valid Connection"
 
 def move_left(ser):
     if ser:

@@ -9,11 +9,15 @@ try:
     from guiapp.threads.video_threads import VideoThread
     from guiapp.utils.ser_con import move_left, move_right
     from guiapp.platform_screen import PlatformWindow
+    from guiapp.ui.model_menu import ModelWindow
+    
 except ImportError:
     # Fallback
     from threads.video_threads import VideoThread
     from utils.ser_con import move_left, move_right
     from platform_screen import PlatformWindow
+    from ui.model_menu import ModelWindow
+
 
 class MainWindow(QMainWindow):
     # Signals
@@ -49,6 +53,9 @@ class MainWindow(QMainWindow):
         self.platform_button = QPushButton("Platform")
         self.platform_button.setStyleSheet("background-color: lightgray")
 
+        self.models_button = QPushButton("Models")
+        self.models_button.setStyleSheet("background-color: lightgreen")
+
         self.log_display = QTextEdit()
         self.log_display.setReadOnly(True)
         self.log_display.setMinimumWidth(250)
@@ -79,6 +86,7 @@ class MainWindow(QMainWindow):
         video_control_v_layout.addWidget(self.control_button)
         video_control_v_layout.addWidget(self.agent_control_button)
         video_control_v_layout.addWidget(self.platform_button)
+        video_control_v_layout.addWidget(self.models_button)
         main_h_layout.addLayout(video_control_v_layout)
         
         right_v_layout = QVBoxLayout()
@@ -102,6 +110,7 @@ class MainWindow(QMainWindow):
         self.control_button.clicked.connect(self.toggle_inference)
         self.agent_control_button.clicked.connect(self.toggle_agent)
         self.platform_button.clicked.connect(self.open_platform_menu)
+        self.models_button.clicked.connect(self.open_model_menu)
         self.interval_slider.valueChanged.connect(self.update_interval_ui)
         self.interval_slider.valueChanged.connect(self.update_interval_thread)
 
@@ -111,6 +120,7 @@ class MainWindow(QMainWindow):
         self.inference_toggle_signal.connect(self.thread.toggle_inference)
         self.agent_toggle_signal.connect(self.thread.toggle_agent)
         self.command_interval_update_signal.connect(self.thread.set_command_interval)
+        self.update_model_signal.connect(self.thread.update_model)
         
         self.thread.change_pixmap_signal.connect(self.update_image)
         self.thread.command_log_signal.connect(self.update_log_display)
@@ -128,6 +138,14 @@ class MainWindow(QMainWindow):
     def open_platform_menu(self):
         self.platform_menu = PlatformWindow(self)
         self.platform_menu.show()
+    
+    def open_model_menu(self):
+        self.model_menu = ModelWindow(self)
+        self.model_menu.model_selected_signal.connect(self.emit_update_model)
+        self.model_menu.show()
+    
+    def emit_update_model(self, model_path):
+        self.update_model_signal.emit(model_path)
 
     def toggle_inference(self, checked):
         if checked:
