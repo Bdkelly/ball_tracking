@@ -1,6 +1,6 @@
 #Agent Calls
-from RLAgent.ballfind import get_ball_detection
-from RLAgent.reward import RewardSystem
+from ballfind import get_ball_detection
+from reward import RewardSystem
 #Standard Calls
 import cv2
 import numpy as np

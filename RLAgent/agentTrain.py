@@ -1,8 +1,8 @@
 #Agent Calls
-from RLAgent.RLAgent import RLAgent
-from RLAgent.camController import CameraControlEnv
-from RLAgent.utils.models import get_fasterrcnn_model_single_class
-from RLAgent.reward import RewardSystem
+from RLAgent import RLAgent
+from camController import CameraControlEnv
+from utils.models import get_fasterrcnn_model_single_class
+from reward import RewardSystem
 from RLAgent import config
 
 #Standard Calls

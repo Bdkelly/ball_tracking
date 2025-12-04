@@ -24,6 +24,7 @@ class MainWindow(QMainWindow):
     inference_toggle_signal = pyqtSignal(bool)
     command_interval_update_signal = pyqtSignal(float) 
     agent_toggle_signal = pyqtSignal(bool)
+    update_model_signal = pyqtSignal(str)
 
     def __init__(self):
         super().__init__()
