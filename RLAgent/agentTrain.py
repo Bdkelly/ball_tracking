@@ -1,9 +1,10 @@
 #Agent Calls
-from RLAgent import RLAgent
-from camController import CameraControlEnv
-from utils.models import get_fasterrcnn_model_single_class
-from reward import RewardSystem
-from RLAgent import config
+from .RLAgent import RLAgent
+from .camController import CameraControlEnv
+from .utils.models import get_fasterrcnn_model_single_class
+from .utils.noise import OUNoise
+from .reward import RewardSystem
+from . import config
 
 #Standard Calls
 from albumentations.pytorch import ToTensorV2
@@ -74,16 +75,20 @@ def train_agent(videopth, model_path, num_episodes=config.NUM_EPISODES, max_t=co
 
     print(f"Starting DDPG Training for {num_episodes} episodes...")
     scores_deque = deque(maxlen=100)
-    noise = config.NOISE_SIGMA
+    ou_noise = OUNoise(config.ACTION_SIZE, theta=config.NOISE_THETA, sigma=config.NOISE_SIGMA)
     best_score = -np.inf
     
     for i_episode in range(1, num_episodes + 1):
         state, frame_with_detections = env.reset() 
+        if state.shape[0] != config.STATE_SIZE:
+             raise ValueError(f"State size mismatch! Env returned {state.shape[0]}, Config expects {config.STATE_SIZE}. Please ensure camController.py is updated.")
+
+        ou_noise.reset()
         score = 0
         
         for t in range(max_t):
             action = agent.choose_action(state)
-            action_with_noise = action + np.random.normal(0, noise, size=config.ACTION_SIZE)
+            action_with_noise = action + ou_noise.sample()
             action_with_noise = np.clip(action_with_noise, -config.MAX_ACTION, config.MAX_ACTION)
 
             next_state, reward, done, action_taken, frame_with_detections = env.step(action_with_noise)
@@ -95,15 +100,18 @@ def train_agent(videopth, model_path, num_episodes=config.NUM_EPISODES, max_t=co
             score += reward
 
             if len(action_taken) == 1:
-                text = f"Pan: {action_taken[0]:.2f}"
+                text = f"Pan: {action_taken[0]:.2f}, State: {state[0]:.2f}"
             else:
                 text = f"Pan: {action_taken[0]:.2f}, Tilt: {action_taken[1]:.2f}"
+
+            print(f"State: dx={state[0]:.3f}, dy={state[1]:.3f}, Action: {action_with_noise[0]:.3f}")
             cv2.putText(frame_with_detections, text, 
                         (10, H - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
             
-            cv2.imshow('DDPG Tracking (Green Box is Agent Control Window)', frame_with_detections)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+            if not config.HEADLESS:
+                cv2.imshow('DDPG Tracking (Green Box is Agent Control Window)', frame_with_detections)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
 
             if done:
                 break
@@ -116,7 +124,8 @@ def train_agent(videopth, model_path, num_episodes=config.NUM_EPISODES, max_t=co
             save_checkpoint(agent, 'best')
         
         
-        noise = max(config.NOISE_SIGMA_MIN, noise * config.NOISE_DECAY)
+        # Decay noise
+        ou_noise.sigma = max(config.NOISE_SIGMA_MIN, ou_noise.sigma * config.NOISE_DECAY)
 
         print(f'\rEpisode {i_episode}\tAverage Score (100 eps): {avg_score:.2f}\tScore: {score:.2f}', end="")
         if i_episode % 100 == 0:
