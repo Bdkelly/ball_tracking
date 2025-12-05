@@ -1,9 +1,9 @@
 #Agent Calls
-from RLAgent import RLAgent
-from camController import CameraControlEnv
-from utils.models import get_fasterrcnn_model_single_class
-from reward import RewardSystem
-from RLAgent import config
+from .RLAgent import RLAgent
+from .camController import CameraControlEnv
+from .utils.models import get_fasterrcnn_model_single_class
+from .reward import RewardSystem
+from . import config
 
 #Standard Calls
 from albumentations.pytorch import ToTensorV2
@@ -101,9 +101,10 @@ def train_agent(videopth, model_path, num_episodes=config.NUM_EPISODES, max_t=co
             cv2.putText(frame_with_detections, text, 
                         (10, H - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
             
-            cv2.imshow('DDPG Tracking (Green Box is Agent Control Window)', frame_with_detections)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+            if not config.HEADLESS:
+                cv2.imshow('DDPG Tracking (Green Box is Agent Control Window)', frame_with_detections)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
 
             if done:
                 break
