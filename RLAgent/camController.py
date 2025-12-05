@@ -46,12 +46,12 @@ class CameraControlEnv:
         self.dyn_center_x = self.FRAME_CENTER[0]
         self.dyn_center_y = self.FRAME_CENTER[1]
 
-        ball_x, ball_y, frame_with_detections, _ = self.detect_ball()
+        ball_x, ball_y, frame_with_detections, is_detected = self.detect_ball()
         
         dx = (ball_x - self.dyn_center_x) / self.W 
         dy = (ball_y - self.dyn_center_y) / self.H 
         
-        initial_state = np.array([dx, dy, 0.0], dtype=np.float32)
+        initial_state = np.array([dx, dy, 0.0, float(is_detected)], dtype=np.float32)
         
         half_width = self.window_width // 2
         half_height = self.window_height // 2
