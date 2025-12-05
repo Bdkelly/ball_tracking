@@ -46,7 +46,7 @@ class CameraControlEnv:
         self.dyn_center_x = self.FRAME_CENTER[0]
         self.dyn_center_y = self.FRAME_CENTER[1]
 
-        ball_x, ball_y, frame_with_detections = self.detect_ball()
+        ball_x, ball_y, frame_with_detections, _ = self.detect_ball()
         
         dx = (ball_x - self.dyn_center_x) / self.W 
         dy = (ball_y - self.dyn_center_y) / self.H 
@@ -70,24 +70,26 @@ class CameraControlEnv:
 
     def detect_ball(self):
         if self.current_frame is None:
-            return 0.0, 0.0, None
+            return 0.0, 0.0, None, False
 
         detected_boxes, frame_with_detections = get_ball_detection(
             self.detection_model, self.current_frame.copy(), self.transform, self.device
         )
-        
+        is_detected = False
         if detected_boxes:
             box = detected_boxes[0]['box']
             x_min, y_min, x_max, y_max = box
             
             ball_x = (x_min + x_max) // 2
             ball_y = (y_min + y_max) // 2
+            is_detected = True
         else:
             
             ball_x = self.dyn_center_x 
             ball_y = self.dyn_center_y
+            is_detected = False
             
-        return ball_x, ball_y, frame_with_detections
+        return ball_x, ball_y, frame_with_detections, is_detected
 
 
     def step(self, action):
@@ -129,7 +131,7 @@ class CameraControlEnv:
 
         self.current_frame = next_frame
         
-        ball_x, ball_y, frame_with_detections = self.detect_ball()
+        ball_x, ball_y, frame_with_detections, is_detected = self.detect_ball()
         
         
         dx = (ball_x - self.dyn_center_x) / self.W
@@ -138,7 +140,7 @@ class CameraControlEnv:
         
         next_state = np.array([dx, dy, pan_action], dtype=np.float32)
 
-        reward = self.reward_system.calculate_reward(dx, dy, pan_action)
+        reward = self.reward_system.calculate_reward(dx, dy, pan_action, is_detected)
         self.reward_system.update_prev_action(pan_action)
         
         done = False
@@ -164,7 +166,7 @@ class CameraControlEnv:
         self.current_frame = frame
 
     def get_state(self):
-        ball_x, ball_y, frame_with_detections = self.detect_ball()
+        ball_x, ball_y, frame_with_detections, _ = self.detect_ball()
         dx = (ball_x - self.dyn_center_x) / self.W
         dy = (ball_y - self.dyn_center_y) / self.H
         state = np.array([dx, dy, 0.0], dtype=np.float32)

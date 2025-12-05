@@ -18,7 +18,7 @@ from collections import deque
 def vidget(videopth):
     cap = cv2.VideoCapture(videopth)
     if not cap.isOpened():
-        print(f"Error: Could not open video file {videopth}")
+        print(f"Error: Co  uld not open video file {videopth}")
         return None, 0, 0
     W = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     H = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
