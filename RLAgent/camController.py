@@ -123,7 +123,7 @@ class CameraControlEnv:
             
             done = True
             
-            next_state = np.zeros(3, dtype=np.float32) 
+            next_state = np.zeros(4, dtype=np.float32) 
             reward = 0.0
             frame_with_detections = self.current_frame
             
@@ -138,7 +138,7 @@ class CameraControlEnv:
         dy = (ball_y - self.dyn_center_y) / self.H
         
         
-        next_state = np.array([dx, dy, pan_action], dtype=np.float32)
+        next_state = np.array([dx, dy, pan_action, float(is_detected)], dtype=np.float32)
 
         reward = self.reward_system.calculate_reward(dx, dy, pan_action, is_detected)
         self.reward_system.update_prev_action(pan_action)
@@ -166,10 +166,10 @@ class CameraControlEnv:
         self.current_frame = frame
 
     def get_state(self):
-        ball_x, ball_y, frame_with_detections, _ = self.detect_ball()
+        ball_x, ball_y, frame_with_detections, is_detected = self.detect_ball()
         dx = (ball_x - self.dyn_center_x) / self.W
         dy = (ball_y - self.dyn_center_y) / self.H
-        state = np.array([dx, dy, 0.0], dtype=np.float32)
+        state = np.array([dx, dy, 0.0, float(is_detected)], dtype=np.float32)
         return state, frame_with_detections
 
     def execute_action(self, action):

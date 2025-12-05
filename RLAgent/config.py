@@ -10,7 +10,7 @@ CHECKPOINT_DIR = 'checkpoints'
 LOG_DIR = 'logs'
 
 # Model parameters
-STATE_SIZE = 3
+STATE_SIZE = 4
 ACTION_SIZE = 1
 MAX_ACTION = 5.0
 NUM_CLASSES = 2 
@@ -27,6 +27,7 @@ MEMORY_SIZE = 100000
 
 # Noise parameters
 NOISE_SIGMA = 0.2
+NOISE_THETA = 0.15
 NOISE_DECAY = 0.999
 NOISE_SIGMA_MIN = 0.01
 
