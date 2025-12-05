@@ -43,6 +43,12 @@ def test_step(env, mocker):
 def test_detect_ball(env, mocker):
     mocker.patch('RLAgent.camController.get_ball_detection', return_value=([{'box': (100, 100, 200, 200)}], np.zeros((720, 1280, 3), dtype=np.uint8)))
     env.current_frame = np.zeros((720, 1280, 3), dtype=np.uint8)
-    ball_x, ball_y, _ = env.detect_ball()
+    ball_x, ball_y, _, is_detected = env.detect_ball()
     assert ball_x == 150
     assert ball_y == 150
+    assert is_detected is True
+
+    # Test no detection
+    mocker.patch('RLAgent.camController.get_ball_detection', return_value=([], np.zeros((720, 1280, 3), dtype=np.uint8)))
+    ball_x, ball_y, _, is_detected = env.detect_ball()
+    assert is_detected is False
