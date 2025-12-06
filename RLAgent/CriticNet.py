@@ -23,7 +23,7 @@ class Critic(nn.Module):
         self.fc2.weight.data.uniform_(*hidden_init(self.fc2))
         self.fc3.weight.data.uniform_(-3e-3, 3e-3)
     def forward(self, state, action):
-        xs = self.fcs1(state)
+        xs = self.fc1(state)
         xs = self.ln1(xs)
         xs = F.relu(xs)
         
