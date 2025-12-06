@@ -8,13 +8,17 @@ def hidden_init(layer):
     return (-lim, lim)
 
 class Critic(nn.Module):
-    def __init__(self, state_size, action_size, fcs1_units=256, fc2_units=128):
+    def __init__(self, state_size, action_size, max_action=1.0, fcs1_units=256, fc2_units=128):
         super(Critic, self).__init__()
         self.fcs1 = nn.Linear(state_size, fcs1_units)
         self.ln1 = nn.LayerNorm(fcs1_units)
         self.fc2 = nn.Linear(fcs1_units + action_size, fc2_units)
         self.ln2 = nn.LayerNorm(fc2_units)
         self.fc3 = nn.Linear(fc2_units, 1)
+
+        # max_action is accepted to satisfy the interface but usually not needed for Critic
+        # unless we normalize actions inside. We store it just in case.
+        self.max_action = max_action
 
         self.reset_parameters()
 
