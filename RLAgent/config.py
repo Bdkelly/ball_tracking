@@ -33,9 +33,9 @@ NOISE_SIGMA_MIN = 0.01
 
 # Reward weights
 RWD_WEIGHTS = {
-    "centering": 100.0,
+    "centering": 1.0,
     "effort": 0.001,
-    "stability": 10.0,
-    "lost_ball_penalty": 100.0,
-    "window_bonus": 100.0
+    "stability": 0.1,
+    "lost_ball_penalty": 1.0,
+    "window_bonus": 1.0
 }
