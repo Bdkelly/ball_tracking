@@ -22,8 +22,8 @@ LR_ACTOR = 1e-4
 LR_CRITIC = 1e-3
 GAMMA = 0.99
 SOFT_UPDATE = 1e-3
-BATCH_SIZE = 128
-MEMORY_SIZE = 100000
+BATCH_SIZE = 1024   
+MEMORY_SIZE = 4096
 
 # Noise parameters
 NOISE_SIGMA = 0.2
@@ -34,8 +34,8 @@ NOISE_SIGMA_MIN = 0.01
 # Reward weights
 RWD_WEIGHTS = {
     "centering": 100.0,
-    "effort": 0.1,
-    "stability": 50.0,
+    "effort": 0.001,
+    "stability": 10.0,
     "lost_ball_penalty": 100.0,
-    "window_bonus": 10.0
+    "window_bonus": 100.0
 }

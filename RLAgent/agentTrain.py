@@ -97,7 +97,7 @@ def train_agent(videopth, model_path, num_episodes=config.NUM_EPISODES, max_t=co
             score += reward
 
             if len(action_taken) == 1:
-                text = f"Pan: {action_taken[0]:.2f}, State: {state[0]:.2f}"
+                text = f"Pan: {action_taken[0]:.2f}, State: {state[0]:.2f}, , R={reward:.2f}"
             else:
                 text = f"Pan: {action_taken[0]:.2f}, Tilt: {action_taken[1]:.2f}"
             print(f"State: dx={state[0]:.3f}, dy={state[1]:.3f}, Action: {action_with_noise[0]:.3f}")
